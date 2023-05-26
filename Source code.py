@@ -1,0 +1,197 @@
+import random
+import sys
+import time
+
+import pygame
+from pygame.locals import *
+
+
+SETWIDTH = 1350
+SETHEIGHT = 700
+BACKGROUND = "background.png"
+SNAKE = "block.png"
+# FOOD = "apple.png"
+FPS = 32
+FpsClock = pygame.time.Clock()
+class Game:
+    def __init__(self):
+        pygame.init()
+        pygame.mixer.init()
+        self.screen = pygame.display.set_mode((SETWIDTH, SETHEIGHT), 0, 32)
+        self.snake = Snake(self.screen,1)
+        self.food = Food(self.screen)
+        pygame.display.set_caption("Snake Game")
+        self.background = pygame.image.load(BACKGROUND).convert()
+
+    def is_Collide(self,x1,y1,x2,y2):
+        if x1 >= x2 and x1 < x2 + 16:
+            if y1 >= y2 and y1 < y2 + 16:
+                return True
+        return False
+    def playsound(self,name):
+        self.name = name
+        name = pygame.mixer.Sound(f"{name}.mp3")
+        self.m1 = pygame.mixer.Sound.play(name)
+
+
+    def resetGame(self):
+        self.snake.resetposition()
+        self.snake.length = 1
+        self.food.changePosition()
+        # pygame.display.update()
+    def Score(self):
+        self.font = pygame.font.SysFont("Arial", 40)
+        self.score = self.font.render(f"Score: {self.snake.length - 1}", True, (0, 250, 250))
+        self.name = self.font.render(f"The Snake Game By Syed Hamza Gilani", True, (140, 250, 105))
+        self.screen.blit(self.name, (0, 130))
+        self.screen.blit(self.score, (SETWIDTH - 150, 130))
+    def play(self):
+        self.run = True
+        while self.run:
+            self.screen.blit((self.background),(0, 0))
+            self.snake.display()
+            for events in pygame.event.get():
+                if events.type == QUIT:
+                    self.run = False
+                    pygame.quit()
+                    sys.exit()
+                if events.type == KEYDOWN:
+                    if events.key == K_ESCAPE:
+                        self.run = False
+                        pygame.quit()
+                        sys.exit()
+                    if events.key == K_LEFT:
+                        self.snake.direction = "left"
+                        self.snake.display()
+
+                    if events.key == K_RIGHT:
+                        self.snake.direction = "right"
+                        self.snake.display()
+
+                    if events.key == K_UP:
+                        self.snake.direction = "up"
+                        self.snake.display()
+
+                    if events.key == K_DOWN:
+                        self.snake.direction = "down"
+                        self.snake.display()
+            if self.is_Collide(self.snake.snake_x[0],self.snake.snake_y[0],self.food.food_x,self.food.food_y):
+                print("Is colliding")
+                self.playsound("ding")
+                self.snake.increment()
+                self.food.changePosition()
+
+            for i in range(2,self.snake.length):
+                try:
+                    if self.is_Collide(self.snake.snake_x[0],self.snake.snake_y[0],self.snake.snake_x[i],self.snake.snake_y[i]):
+                        self.font = pygame.font.SysFont("Arial", 50)
+                        self.Over = self.font.render("Game Over!, You Hit Your Body", True, (0, 0, 250))
+                        self.screen.blit(self.Over, (SETWIDTH / 2 - 300, 400))
+                        pygame.display.update()
+                        self.resetGame()
+                        self.playsound("Crash")
+                        time.sleep(2)
+                        pygame.mixer.fadeout(1)
+
+                except Exception as e:
+                    print(e)
+            self.Score()
+            self.snake.move()
+            self.food.display()
+            self.snake.gameOver()
+            pygame.display.update()
+            FpsClock.tick(FPS)
+            time.sleep(0.1)
+
+class Snake:
+    def __init__(self,parent_Screen,length):
+        self.parent_Screen = parent_Screen
+        self.length = length
+        self.snake = pygame.image.load(SNAKE).convert_alpha()
+        self.length = length
+        self.direction = "left"
+        self.snake_x = [SETWIDTH/2] * self.length
+        self.snake_y = [SETHEIGHT/2 + 100] * self.length
+    def display(self):
+        for i in range(self.length):
+            self.parent_Screen.blit(self.snake,(self.snake_x[i], self.snake_y[i]))
+            # pygame.display.update()
+    def gameOver(self):
+        self.font = pygame.font.SysFont("Arial", 50)
+
+        if self.snake_x[0] <= 0:
+            print("You Hit The Left Boundary ---> Game Over")
+            self.Over = self.font.render("Game Over!, You Hit The Left Boundary", True, (0, 0, 250))
+            self.parent_Screen.blit(self.Over, (SETWIDTH/2 - 400, 400))
+            pygame.display.update()
+            time.sleep(2)
+            self.resetposition()
+
+        elif self.snake_x[0] >= (SETWIDTH - 5):
+            print("You Hit The Right Boundary ---> Game Over")
+            self.Over = self.font.render("Game Over!, You Hit The Right Boundary", True, (0, 0, 250))
+            self.parent_Screen.blit(self.Over, (SETWIDTH/2 - 400, 400))
+            pygame.display.update()
+            time.sleep(2)
+            self.resetposition()
+
+        elif self.snake_y[0] <= 184:
+            print("You Hit The Upper boundary ----> Game Over")
+            self.Over = self.font.render("Game Over!, You Hit The Upper Boundary", True, (0, 0, 250))
+            self.parent_Screen.blit(self.Over, (SETWIDTH/2 - 400, 400))
+            pygame.display.update()
+            time.sleep(2)
+            self.resetposition()
+
+        elif self.snake_y[0] >= (SETHEIGHT - 20):
+            print("You Hit The Lower Boundary ----> Game Over")
+            self.Over = self.font.render("Game Over!, You Hit The Lower Boundary", True, (0, 0, 250))
+            self.parent_Screen.blit(self.Over, (SETWIDTH/2 - 400, 400))
+            pygame.display.update()
+            time.sleep(2)
+            self.resetposition()
+
+    def increment(self):
+        self.length += 1
+        self.snake_x.append(-1)
+        self.snake_y.append(-1)
+    def move(self):
+        for i in range(self.length-1, 0, -1):
+            self.snake_x[i] = self.snake_x[i-1]
+            self.snake_y[i] = self.snake_y[i-1]
+            self.display()
+        if self.direction == "left":
+            self.snake_x[0] -= 16
+            self.gameOver()
+        elif self.direction == "right":
+            self.snake_x[0] += 16
+            self.gameOver()
+        elif self.direction == "up":
+            self.snake_y[0] -= 16
+            self.gameOver()
+        elif self.direction == "down":
+            self.snake_y[0] += 16
+            self.gameOver()
+    def resetposition(self):
+        self.snake_x = [SETWIDTH / 2] * self.length
+        self.snake_y = [SETHEIGHT / 2 + 100] * self.length
+        self.length = 1
+        # pygame.mixer.init()
+        # crash = pygame.mixer.Sound("Crash.mp3")
+        # pygame.mixer.Sound.play(crash)
+        self.display()
+
+class Food:
+    def __init__(self,parentScreen):
+        self.parentScreen = parentScreen
+        self.food = pygame.image.load(FOOD).convert_alpha()
+        self.food_x = random.randrange(34, SETWIDTH - 20, 16)
+        self.food_y = random.randrange(223, SETHEIGHT - 30, 16)
+    def display(self):
+        self.parentScreen.blit(self.food,(self.food_x, self.food_y))
+    def changePosition(self):
+        self.food_x = random.randrange(34, SETWIDTH - 20, 16)
+        self.food_y = random.randrange(223, SETHEIGHT - 30, 16)
+if __name__ == '__main__':
+    game = Game()
+    game.play()
